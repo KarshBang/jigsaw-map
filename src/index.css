@@ -1,0 +1,16 @@
+#container {
+    width: 1000px;
+    height: 1000px;
+    background-color: aqua;
+    overflow: hidden;
+    position: absolute;
+}
+
+
+
+
+.map-img {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+}
