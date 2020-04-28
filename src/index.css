@@ -6,7 +6,15 @@
     position: absolute;
 }
 
+#mask {
+    transition-property: transform, left, top;
+    transition-duration: 200ms;
+    transition-timing-function: linear, ease-in-out;
+}
 
+#mask.mask-drag {
+    transition: none;
+}
 
 
 .map-img {
