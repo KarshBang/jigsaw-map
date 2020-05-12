@@ -1,14 +1,20 @@
 interface srcParam {
     x: number,
     y: number,
-    // layer: number,
+    // level: number,
     // option: string
 }
 
+const LEVEL_SCALE = 2
 
 
 function getData(dom: HTMLElement, params: srcParam) {
 
+}
+
+function posRemainer(a: number, b: number): number {
+    const res = a % b
+    return res < 0 ? res + b : res
 }
 
 
@@ -77,9 +83,10 @@ function addScroll(container: HTMLElement, dom: HTMLElement, map: AbstractMap): 
     }
     container.onwheel = wheel
 }
-
-type imgList = HTMLImageElement[]
+//todo 修改为 HTMLImageElement
+type imgList = HTMLElement[]
 class AbstractMap {
+    level: number
     //图片数量
     rowNum = 4
     colNum = 4
@@ -92,11 +99,14 @@ class AbstractMap {
     //图片上(左)边缘的坐标和索引
     rowEdge: number
     colEdge: number
-    rowEdgeIndex = 0
-    colEdgeIndex = 0
+    rowEdgeIndex: number
+    colEdgeIndex: number
     //鼠标当前位置,用于缩放
     mouseX: number
     mouseY: number
+
+    baseCol: number
+    baseRow: number
 
     //地图的偏移量以及缩放比例
     private _xCoordinate: number
@@ -107,39 +117,66 @@ class AbstractMap {
     mask: HTMLElement
     baseUrl: string
     constructor(container: HTMLElement, baseUrl: string) {
-        this._scale = 1
         this.baseUrl = baseUrl
         this.rowList = new Array(this.rowNum).fill(0).map(() => [])
         this.colList = new Array(this.colNum).fill(0).map(() => [])
-        this.rowEdge = 0
-        this.colEdge = 0
-        this._xCoordinate = 0
-        this._yCoordinate = 0
         const mask = document.createElement('div')
         this.mask = mask
         mask.id = 'mask'
         //init
-        mask.style.left = '0px'
-        mask.style.top = '0px'
         container.appendChild(mask)
         addDrag(container, mask, this)
         addScroll(container, mask, this)
         for (let i = 0; i < this.rowNum; ++i) {
             for (let j = 0; j < this.colNum; ++j) {
-                const img = new Image()
-                img.src = this.getUrl({ x: i, y: j })
+                //todo 先用div测试
+                // const img = new Image()
+                const img = document.createElement('div')
                 img.classList.add('map-img')
-                img.style.top = i * 200 + 'px'
-                img.style.left = j * 200 + 'px'
                 mask.appendChild(img)
                 this.rowList[i].push(img)
                 this.colList[j].push(img)
             }
         }
+        this.createMap()
         console.log(this.rowList, this.colList)
     }
-    getUrl(params: srcParam) {
-        return `${this.baseUrl}/${params.x}-${params.y}.png`
+
+    createMap(deltaX: number = 0, deltaY: number = 0, level: number = 0) {
+        this._scale = 1
+        this.rowEdge = 0
+        this.colEdge = 0
+        this.rowEdgeIndex = 0
+        this.colEdgeIndex = 0
+        this._xCoordinate = 0
+        this._yCoordinate = 0
+
+
+        this.level = level
+        this.baseCol = deltaX
+        this.baseRow = deltaY
+
+        const { rowNum, colNum, rowList, mask } = this
+        mask.style.transform = `scale(${1})`
+        mask.style.top = `${0}px`
+        mask.style.left = `${0}px`
+        for (let i = 0; i < rowNum; ++i) {
+            const row: imgList = rowList[i]
+            for (let j = 0; j < colNum; ++j) {
+                const img = row[j]
+                // img.src = this.getUrl({ x: i, y: j })
+                this.getUrl(img, { y: i, x: j })
+                img.style.top = `${i * 200}px`
+                img.style.left = `${j * 200}px`
+            }
+        }
+    }
+
+    //todo 修改为操作元素changeElement
+    // 添加事件可能通过继承一个新的类,扩展此方法
+    getUrl(dom: HTMLElement, params: srcParam) {
+        dom.innerHTML = `${this.level}-${params.x + this.baseCol}-${params.y + this.baseRow}`
+        // return `${this.baseUrl}/${params.x}-${params.y}.png`
     }
     get x(): number {
         return this._xCoordinate
@@ -153,20 +190,92 @@ class AbstractMap {
     }
 
     set scale(newScale: number) {
-        //todo 判断当scale到达一定程度之后刷新图层
-        const {mask, mouseX, mouseY, _scale: oldScale} = this
+        const dif = 800
+        const minX = 0
+        const maxX = 1000
+        const minY = 0
+        const maxY = 1000
+        //todo 图层达到最大最小后, 禁止缩放
+
+        const { mask, mouseX, mouseY, _scale: oldScale } = this
         const oldTop = parseInt(mask.style.top)
         const oldLeft = parseInt(mask.style.left)
         const top = oldTop + (mouseY - oldTop) * (oldScale - newScale) / newScale
-        const left = oldLeft + (mouseX -oldLeft) *(oldScale - newScale) / newScale
+        const left = oldLeft + (mouseX - oldLeft) * (oldScale - newScale) / newScale
 
-        //todo: 调整缩放的原点
+        //done: 调整缩放的原点
         mask.style.transform = `scale(${newScale})`
         mask.style.top = `${top}px`
         mask.style.left = `${left}px`
         this._scale = newScale
-    }
+        this._xCoordinate = left
+        this._yCoordinate = top
 
+        //todo 判断当scale到达一定程度之后刷新图层
+        if (newScale >= 1.5 || newScale <= 0.8) {
+            const newLevel = newScale > 1 ? this.level + 1 : this.level - 1
+            //BUG 这个式子可能有问题 miny 应该也应该*newScale
+            const newLeft = (left - minX) - this.colEdge * newScale
+            const newTop = (top - minY) - this.rowEdge * newScale
+
+            // const numberX = Math.floor((mouseX - newLeft) / newScale / this.imgWidth)
+            // const imgOffsetLeft = (mouseX - newLeft - numberX * newScale * this.imgWidth) / newScale
+
+            // const numberY = Math.floor((mouseY - newTop) / newScale / this.imgHeight)
+            // const imgOffsetTop = (mouseY - newTop - numberY * newScale * this.imgHeight) / newScale
+            // console.log(numberX, numberY, imgOffsetLeft, imgOffsetTop)
+
+            //计算总坐标
+
+            // const col = posRemainer(this.colEdgeIndex, this.colNum)
+            // const row = posRemainer(this.rowEdgeIndex, this.rowNum)
+            // const imgPartialX = parseInt(this.colList[col][0].style.left) * newScale
+            // const imgPartialY = parseInt(this.rowList[row][0].style.top) * newScale
+
+            //缩放后地图左上角对应画布的位置
+
+
+
+            const scaleUnit = 15 //目前尺寸一张图片所占地图大小
+            const baseCol = 0
+            const baseRow = 0
+            //todo: 加入baserow
+            //todo: 坐标越界直接取余
+            const mapX = (baseCol + this.colEdgeIndex) * scaleUnit
+            const mapY = (baseRow + this.rowEdgeIndex) * scaleUnit
+            console.log(mapX, mapY)
+
+            const newScaleUnit = 10
+            //计算起始图片的序号
+            const deltaX = Math.floor(mapX / newScaleUnit)
+            const deltaY = Math.floor(mapY / newScaleUnit)
+
+            console.log(deltaX, deltaY)
+            //计算还需要偏移的坐标
+            const partialX = (deltaX - mapX / newScaleUnit) * this.imgWidth
+            const partialY = (deltaY - mapY / newScaleUnit) * this.imgHeight
+
+            console.log(partialX, partialY)
+
+
+            // return
+            setTimeout(() => {
+
+                this.createMap(deltaX, deltaY, newLevel)
+
+                this.x = newLeft + partialX
+                this.y = newTop + partialY
+            }, 1000)
+
+            return
+        }
+
+
+
+
+    }
+    //todo 改造setx set y
+    //到边界禁止移动
     set x(newX: number) {
         this.mask.style.left = newX + 'px'
 
@@ -178,22 +287,27 @@ class AbstractMap {
         const upBound = (newX - minX) / this._scale - this.imgWidth
         const lowBonud = (newX - maxX) / this._scale + dif + this.imgWidth
         while (this.colEdge < upBound) {
-            this.colEdgeIndex = this.colEdgeIndex ? this.colEdgeIndex : this.colNum
             this.colEdgeIndex--
-            for (let img of this.colList[this.colEdgeIndex]) {
+            const paramX = this.colEdgeIndex
+            const col = posRemainer(this.colEdgeIndex, this.colNum)
+            // 改成let key in的形式会比较好
+            for (let img of this.colList[col]) {
                 const left = parseInt(img.style.left) - dif
                 img.style.left = left + 'px'
+                this.getUrl(img, {x:paramX, y:1})
             }
             this.colEdge += this.imgWidth
         }
 
         while (this.colEdge > lowBonud) {
-            for (let img of this.colList[this.colEdgeIndex]) {
+            const paramX = this.colEdgeIndex + this.colNum
+            const col = posRemainer(this.colEdgeIndex, this.colNum)
+            for (let img of this.colList[col]) {
                 const left = parseInt(img.style.left) + dif
                 img.style.left = left + 'px'
+                this.getUrl(img, {x:paramX, y:1})
             }
             this.colEdgeIndex++
-            this.colEdgeIndex %= this.colNum
             this.colEdge -= this.imgWidth
         }
     }
@@ -208,22 +322,22 @@ class AbstractMap {
         const upBound = (newY - minY) / this._scale - this.imgHeight
         const lowBonud = (newY - maxY) / this._scale + dif + this.imgHeight
         while (this.rowEdge < upBound) {
-            this.rowEdgeIndex = this.rowEdgeIndex ? this.rowEdgeIndex : this.rowNum
             this.rowEdgeIndex--
+            const row = posRemainer(this.rowEdgeIndex, this.rowNum)
             //todo 考虑图片加载(利用位置) rowEdge不能取余要累计计数
-            for (let img of this.rowList[this.rowEdgeIndex]) {
+            for (let img of this.rowList[row]) {
                 const top = parseInt(img.style.top) - dif
                 img.style.top = top + 'px'
             }
             this.rowEdge += this.imgHeight
         }
         while (this.rowEdge > lowBonud) {
+            const row = posRemainer(this.rowEdgeIndex, this.rowNum)
             for (let img of this.rowList[this.rowEdgeIndex]) {
                 const top = parseInt(img.style.top) + dif
                 img.style.top = top + 'px'
             }
             this.rowEdgeIndex++
-            this.rowEdgeIndex %= this.rowNum
             this.rowEdge -= this.imgHeight
         }
 
