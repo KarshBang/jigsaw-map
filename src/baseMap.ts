@@ -1,9 +1,11 @@
+import {throttle} from './util'
 type imgList = HTMLElement[]
 type numberPair = [number, number]
-interface MapConfig {
+export interface MapConfig {
     imgSize: numberPair
     xRange: numberPair
-    yRange: numberPair,
+    yRange: numberPair
+    levelLimit?: number
     scaleRange?: numberPair
 }
 
@@ -36,8 +38,10 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
         e.preventDefault()
         x = e.clientX
         y = e.clientY
-        l = dom.offsetLeft
-        t = dom.offsetTop
+        // l = dom.offsetLeft
+        // t = dom.offsetTop
+        l = map.x
+        t = map.y
         isDrag = true
         dom.style.cursor = 'move'
         dom.classList.add('mask-drag')
@@ -68,20 +72,28 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
 }
 
 
-function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
+function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap, initStep:number = 0.1): (a:number)=>number {
+    let step = initStep
     const wheel = (e: MouseWheelEvent) => {
+        console.log(123)
         const x = e.clientX - container.offsetLeft
         const y = e.clientY - container.offsetTop
         e.preventDefault()
         map.mouseX = x
         map.mouseY = y
         if (e.deltaY > 0) {
-            map.scale -= 0.1
+            map.scale -= step
         } else {
-            map.scale += 0.1
+            map.scale += step
         }
     }
-    container.onwheel = wheel
+    container.onwheel = throttle(wheel,200)
+    return function(newStep?:number):number {
+        if(newStep === undefined) {
+            return step
+        }
+        return step = newStep
+    }
 }
 
 
@@ -151,7 +163,7 @@ class BaseMap extends AbstractMap {
             ;[this.minX, this.maxX] = config.xRange
             ;[this.minY, this.maxY] = config.yRange
             ;[this.imgHeight, this.imgWidth] = config.imgSize
-            ;[this.minScale, this.maxScale] = config.scaleRange || [0.8, 3]
+            ;[this.minScale, this.maxScale] = config.scaleRange || [2 / 3, 1.5]
 
 
         const xDomain = this.maxX - this.minX
@@ -170,7 +182,6 @@ class BaseMap extends AbstractMap {
         }
 
 
-
         this.colNum = Math.floor(xDomain / this.imgWidth)
         this.rowNum = Math.floor(yDomain / this.imgHeight)
         this.difX = this.colNum * this.imgWidth
@@ -184,11 +195,9 @@ class BaseMap extends AbstractMap {
         this.container = container
         mask.id = 'mask'
         container.appendChild(mask)
-
-
     }
 
-    init(patchInit?: () => HTMLElement) {
+    init(patchInit?: () => HTMLElement, ) {
         const { mask, container } = this
         if (patchInit) {
             this.patchInit = patchInit
@@ -204,7 +213,7 @@ class BaseMap extends AbstractMap {
             }
         }
         addDrag(container, mask, this)
-        addScroll(container, mask, this)
+        const changeScrollStep = addScroll(container, mask, this)
         this.createMap()
         //todo 初始时地图居中
         const partialX = ((this.maxX - this.minX) - this.colNum * this.imgWidth) / 2 + this.minX
@@ -212,6 +221,7 @@ class BaseMap extends AbstractMap {
         console.log(partialX, partialY)
         this.x = partialX
         this.y = partialY
+        return changeScrollStep
     }
 
     patchInit(): HTMLElement {
@@ -244,9 +254,10 @@ class BaseMap extends AbstractMap {
         this.baseRow = deltaY
 
         const { rowNum, colNum, rowList, mask } = this
-        mask.style.transform = `scale(${1})`
-        mask.style.top = `${0}px`
-        mask.style.left = `${0}px`
+        mask.style.transform = `translate3d(${0}px, ${0}px, 0) scale(${1})`
+        // mask.style.transform = `scale(${1})`
+        // mask.style.top = `${0}px`
+        // mask.style.left = `${0}px`
         for (let i = 0; i < rowNum; ++i) {
             const row: imgList = rowList[i]
             for (let j = 0; j < colNum; ++j) {
@@ -279,7 +290,6 @@ class BaseMap extends AbstractMap {
         }
         img.height = 2 * half
         img.width = 2 * half
-        console.log(img.height,this.level)
         img.style.left = `${-params.x * 200 - half}px`
         img.style.top = `${-params.y * 200 - half}px`
     }
@@ -296,29 +306,50 @@ class BaseMap extends AbstractMap {
     }
 
     set scale(newScale: number) {
-        if (newScale < this.minScale || newScale > this.maxScale) {
-            return
+        if (newScale < this.minScale) {
+            if (this._scale > this.minScale) {
+                newScale = this.minScale
+            } else {
+                return
+            }
         }
-        const { mask, mouseX, mouseY, _scale: oldScale } = this
-        const oldTop = parseInt(mask.style.top)
-        const oldLeft = parseInt(mask.style.left)
-        const top = oldTop + (mouseY - oldTop) * (oldScale - newScale) / newScale
-        const left = oldLeft + (mouseX - oldLeft) * (oldScale - newScale) / newScale
 
+        if (newScale > this.maxScale) {
+            if (this._scale < this.maxScale) {
+                newScale = this.maxScale
+            } else {
+                return
+            }
+        }
+        this._setScale(newScale)
+    }
+
+    _setScale(newScale:number): [number, number] {
+        this.mask.classList.remove('mask-drag')
+        const { mask, mouseX, mouseY, _scale: oldScale } = this
+        const oldTop = this.y
+        const oldLeft = this.x
+        const top = mouseY * (oldScale - newScale) / oldScale + oldTop * newScale / oldScale
+        const left = mouseX * (oldScale - newScale) / oldScale + oldLeft * newScale / oldScale
+        console.log(mouseX, mouseY)
         //done: 调整缩放的原点
-        mask.style.transform = `scale(${newScale})`
-        mask.style.top = `${top}px`
-        mask.style.left = `${left}px`
+        // mask.style.transform = `scale(${newScale})`
+        // mask.style.top = `${top}px`
+        // mask.style.left = `${left}px`
+        mask.style.transform = `translate3d(${left}px, ${top}px, 0) scale(${newScale})`
         this._scale = newScale
         this._xCoordinate = left
         this._yCoordinate = top
+
+        return [left, top]
     }
 
 
     //todo 改造setx set y
     //到边界禁止移动
     set x(newX: number) {
-        this.mask.style.left = newX + 'px'
+        this.mask.style.transform = `translate3d(${newX}px, ${this.y}px, 0) scale(${this.scale})`
+        // this.mask.style.left = newX + 'px'
         this._xCoordinate = newX
 
         const { minX, maxX, difX: dif } = this
@@ -356,7 +387,8 @@ class BaseMap extends AbstractMap {
     }
 
     set y(newY: number) {
-        this.mask.style.top = newY + 'px'
+        this.mask.style.transform = `translate3d(${this.x}px, ${newY}px, 0) scale(${this.scale})`
+        // this.mask.style.top = newY + 'px'
         this._yCoordinate = newY
 
         const { minY, maxY, difY: dif } = this
