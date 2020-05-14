@@ -1,11 +1,26 @@
 import BaseMap, { MapConfig } from './baseMap'
+import { getLeft, getTop } from './util'
 //todo 修改为 HTMLImageElement
 
-function levelFunc() {
+function addContext(container: HTMLElement, map: MagnifierMap) {
 
+    const context = (e: MouseEvent) => {
+        console.log('asd')
+        e.stopPropagation()
+        e.preventDefault()
+        const offsetLeft = getLeft(container)
+        const offsetTop = getTop(container)
+        const x = e.clientX - offsetLeft
+        const y = e.clientY - offsetTop
+        map.mouseX = x
+        map.mouseY = y
+        console.log(x, y)
+        map.eagle = true
+    }
+    container.oncontextmenu = context
 }
 
-class AbstractMap extends BaseMap {
+class LayerMap extends BaseMap {
     scaleUnit = 225
     levelLimit: number
     scrollStep: (a: number) => number
@@ -61,7 +76,6 @@ class AbstractMap extends BaseMap {
             const deltaX = Math.floor(mapX / newScaleUnit)
             const deltaY = Math.floor(mapY / newScaleUnit)
 
-            console.log(deltaX, deltaY)
             //计算还需要偏移的坐标
             const partialX = (deltaX - mapX / newScaleUnit) * this.imgWidth
             const partialY = (deltaY - mapY / newScaleUnit) * this.imgHeight
@@ -72,7 +86,7 @@ class AbstractMap extends BaseMap {
                 this.createMap(deltaX, deltaY, newLevel)
                 this.x = newLeft + partialX
                 this.y = newTop + partialY
-            },200)
+            }, 200)
 
             // return
             this.scaleUnit = newScaleUnit
@@ -84,8 +98,67 @@ class AbstractMap extends BaseMap {
 }
 
 
-class EagleMap extends AbstractMap {
-    miniMap: AbstractMap
+class MagnifierMap extends LayerMap {
+    miniMap: LayerMap
+    _eagle: boolean
+    miniContainer: HTMLElement
+    constructor(container: HTMLElement, config: MapConfig) {
+        super(container, config)
+
+        if (config.miniMap) {
+            const miniContainer = document.createElement('div')
+            miniContainer.id = 'mini-map'
+            this.container.appendChild(miniContainer)
+            this.miniMap = new LayerMap(miniContainer, {
+                xRange: [0, 200],
+                yRange: [0, 200],
+                imgSize: [200, 200],
+                levelLimit: 10,
+                scaleRange: [2 / 3, 1.5],
+            })
+            this.miniContainer = miniContainer
+            this.eagle = false
+
+        }
+    }
+
+    init(patchInit?: () => HTMLElement) {
+        this.scrollStep = super.init(patchInit)
+        this.miniMap && this.miniMap.init()
+        addContext(this.container, this)
+        this.container.addEventListener('mousedown', () => {
+            this.eagle = false
+        })
+        return this.scrollStep
+    }
+
+    get eagle() {
+        return this._eagle
+    }
+    set eagle(newEagle: boolean) {
+        this._eagle = newEagle
+        if (!this.miniContainer) return
+        this.miniContainer.style.display = newEagle ? 'block' : 'none'
+        this.miniContainer.style.left = `${this.mouseX}px`
+        this.miniContainer.style.top = `${this.mouseY}px`
+        //todo 目前用transform会导致
+        // this.miniContainer.style.transform = `translate3d(${this.mouseX}px,${this.mouseY}px,0)`
+        if(newEagle)this.getMousePositon()
+    }
+
+    getMousePositon() {
+        const { scaleUnit, baseCol, baseRow, x, y, imgHeight, imgWidth, _scale, maxScale } = this
+        const mapX = (baseCol + (this.mouseX - x) / _scale / imgWidth) * scaleUnit
+        const mapY = (baseRow + (this.mouseY - y) / _scale / imgHeight) * scaleUnit
+
+        const newScaleUnit = scaleUnit / maxScale
+        this.miniMap.scaleUnit = newScaleUnit
+        const deltaX = Math.floor(mapX / newScaleUnit)
+        const deltaY = Math.floor(mapY / newScaleUnit)
+        this.miniMap.createMap(deltaX, deltaY, this.level + 1)
+        //todo
+    }
+
 }
 
-export default AbstractMap
+export default MagnifierMap

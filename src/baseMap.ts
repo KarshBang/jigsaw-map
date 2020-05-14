@@ -1,12 +1,17 @@
-import {throttle} from './util'
+import { throttle, getLeft, getTop } from './util'
 type imgList = HTMLElement[]
 type numberPair = [number, number]
+interface MiniMapConfig {
+    xRange: numberPair
+    yRange: numberPair
+}
 export interface MapConfig {
     imgSize: numberPair
     xRange: numberPair
     yRange: numberPair
     levelLimit?: number
     scaleRange?: numberPair
+    miniMap?: MiniMapConfig
 }
 
 interface srcParam {
@@ -34,7 +39,7 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
     let left = 0
     let top = 0
     const mouseDown = (e: MouseEvent) => {
-        console.log(e)
+        e.stopPropagation()
         e.preventDefault()
         x = e.clientX
         y = e.clientY
@@ -47,6 +52,8 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
         dom.classList.add('mask-drag')
     }
     const mouseMove = (e: MouseEvent) => {
+        e.stopPropagation()
+
         if (!isDrag) return
         const clientX = e.clientX
         const clientY = e.clientY
@@ -57,7 +64,8 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
         // dom.style.left = left + 'px'
         // dom.style.top = top + 'px'
     }
-    const mouseUp = () => {
+    const mouseUp = (e: MouseEvent) => {
+        e.stopPropagation()
         isDrag = false
         dom.style.cursor = null
         dom.classList.remove('mask-drag')
@@ -66,19 +74,22 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
     container.onmousedown = mouseDown
     container.onmouseup = mouseUp
     container.oncontextmenu = function (e: MouseEvent) {
+        e.stopPropagation()
         e.preventDefault()
         console.log(123)
     }
 }
 
 
-function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap, initStep:number = 0.1): (a:number)=>number {
+function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap, initStep: number = 0.1): (a: number) => number {
     let step = initStep
     const wheel = (e: MouseWheelEvent) => {
-        console.log(123)
-        const x = e.clientX - container.offsetLeft
-        const y = e.clientY - container.offsetTop
+        e.stopPropagation()
         e.preventDefault()
+        const offsetLeft = getLeft(container)
+        const offsetTop = getTop(container)
+        const x = e.clientX - offsetLeft
+        const y = e.clientY - offsetTop
         map.mouseX = x
         map.mouseY = y
         if (e.deltaY > 0) {
@@ -87,9 +98,13 @@ function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap, initS
             map.scale += step
         }
     }
-    container.onwheel = throttle(wheel,200)
-    return function(newStep?:number):number {
-        if(newStep === undefined) {
+    container.addEventListener('wheel', (e: Event) => {
+        e.stopPropagation()
+    } )
+    container.addEventListener('wheel', throttle(wheel, 200))
+    // container.onwheel = throttle(wheel, 200)
+    return function (newStep?: number): number {
+        if (newStep === undefined) {
             return step
         }
         return step = newStep
@@ -164,6 +179,10 @@ class BaseMap extends AbstractMap {
             ;[this.minY, this.maxY] = config.yRange
             ;[this.imgHeight, this.imgWidth] = config.imgSize
             ;[this.minScale, this.maxScale] = config.scaleRange || [2 / 3, 1.5]
+        this.minX -= this.imgWidth
+        this.maxX += this.imgWidth
+        this.minY -= this.imgHeight
+        this.maxY += this.imgHeight
 
 
         const xDomain = this.maxX - this.minX
@@ -214,7 +233,7 @@ class BaseMap extends AbstractMap {
         }
         addDrag(container, mask, this)
         const changeScrollStep = addScroll(container, mask, this)
-        this.createMap()
+        this.createMap(-1,-1)
         //todo 初始时地图居中
         const partialX = ((this.maxX - this.minX) - this.colNum * this.imgWidth) / 2 + this.minX
         const partialY = ((this.maxY - this.minY) - this.rowNum * this.imgHeight) / 2 + this.minY
@@ -273,25 +292,15 @@ class BaseMap extends AbstractMap {
     // 添加事件可能通过继承一个新的类,扩展此方法
     getUrl(dom: HTMLElement, params: srcParam) {
         const img: any = dom.firstElementChild
-        let half
-        switch (this.level) {
-            case 1:
-                half = 1500
-                break;
-            case 2:
-                half = 2250
-                break;
-            default:
-                half = 1000
-                break;
-        }
+        const half = 500 * Math.pow(1.5, this.level)
+
         if (!img.src) {
-            img.src = 'http://127.0.0.1:8081/_MG_0247.jpg'
+            img.src = 'http://192.168.0.106:8081/_MG_0247.jpg'
         }
         img.height = 2 * half
         img.width = 2 * half
-        img.style.left = `${-params.x * 200 - half}px`
-        img.style.top = `${-params.y * 200 - half}px`
+        img.style.left = `${-params.x * 200}px`
+        img.style.top = `${-params.y * 200}px`
     }
 
     get x(): number {
@@ -324,14 +333,13 @@ class BaseMap extends AbstractMap {
         this._setScale(newScale)
     }
 
-    _setScale(newScale:number): [number, number] {
+    _setScale(newScale: number): [number, number] {
         this.mask.classList.remove('mask-drag')
         const { mask, mouseX, mouseY, _scale: oldScale } = this
         const oldTop = this.y
         const oldLeft = this.x
         const top = mouseY * (oldScale - newScale) / oldScale + oldTop * newScale / oldScale
         const left = mouseX * (oldScale - newScale) / oldScale + oldLeft * newScale / oldScale
-        console.log(mouseX, mouseY)
         //done: 调整缩放的原点
         // mask.style.transform = `scale(${newScale})`
         // mask.style.top = `${top}px`
