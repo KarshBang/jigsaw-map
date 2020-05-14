@@ -6,7 +6,6 @@ function levelFunc() {
 }
 
 class AbstractMap extends BaseMap {
-
     scaleUnit = 225
     levelLimit: number
     scrollStep: (a: number) => number
