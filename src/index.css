@@ -13,9 +13,9 @@
 }
 
 #mask {
-    /* transition-property: transform, left, top;
+    transition-property: transform;
     transition-duration: 200ms;
-    transition-timing-function: linear, ease-in-out; */
+    transition-timing-function: linear;
 }
 
 #mask.mask-drag {
