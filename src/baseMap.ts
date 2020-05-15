@@ -100,7 +100,7 @@ function addScroll(container: HTMLElement, dom: HTMLElement, map: BaseMap, initS
     }
     container.addEventListener('wheel', (e: Event) => {
         e.stopPropagation()
-    } )
+    })
     container.addEventListener('wheel', throttle(wheel, 200))
     // container.onwheel = throttle(wheel, 200)
     return function (newStep?: number): number {
@@ -233,7 +233,7 @@ class BaseMap extends AbstractMap {
         }
         addDrag(container, mask, this)
         const changeScrollStep = addScroll(container, mask, this)
-        this.createMap(-1,-1)
+        this.createMap(-1, -1)
         //todo 初始时地图居中
         const partialX = ((this.maxX - this.minX) - this.colNum * this.imgWidth) / 2 + this.minX
         const partialY = ((this.maxY - this.minY) - this.rowNum * this.imgHeight) / 2 + this.minY
@@ -356,14 +356,21 @@ class BaseMap extends AbstractMap {
     //todo 改造setx set y
     //到边界禁止移动
     set x(newX: number) {
-        this.mask.style.transform = `translate3d(${newX}px, ${this.y}px, 0) scale(${this.scale})`
-        // this.mask.style.left = newX + 'px'
-        this._xCoordinate = newX
 
         const { minX, maxX, difX: dif } = this
 
-        const upBound = (newX - minX) / this._scale - this.imgWidth
-        const lowBonud = (newX - maxX) / this._scale + dif + this.imgWidth
+        let upBound = (newX - minX) / this._scale - this.imgWidth
+        let lowBonud = (newX - maxX) / this._scale + dif + this.imgWidth
+        let round: number
+        if (this.colEdge < upBound) {
+            round = Math.floor((upBound - this.colEdge) / (this.colNum * this.imgWidth * this._scale))
+            if (round > 0) {
+                newX -= this.colNum * this.imgWidth * round * this._scale
+                this.baseCol -= round * this.colNum
+                upBound -= this.imgWidth * round * this.colNum
+                this.refresh()
+            }
+        }
         while (this.colEdge < upBound) {
             this.colEdgeIndex--
             const paramX = this.colEdgeIndex + this.baseCol
@@ -379,6 +386,16 @@ class BaseMap extends AbstractMap {
             this.colEdge += this.imgWidth
         }
 
+        if (this.colEdge > lowBonud) {
+            round = Math.floor((this.colEdge - lowBonud) / (this.colNum * this.imgWidth * this._scale))
+            if (round > 0) {
+                newX += this.colNum * this.imgWidth * round * this._scale
+                this.baseCol += round * this.colNum
+                lowBonud += this.imgWidth * round * this.colNum
+                this.refresh()
+            }
+        }
+
         while (this.colEdge > lowBonud) {
             const paramX = this.colEdgeIndex + this.colNum + this.baseCol
             const col = posRemainer(this.colEdgeIndex, this.colNum)
@@ -392,16 +409,25 @@ class BaseMap extends AbstractMap {
             this.colEdgeIndex++
             this.colEdge -= this.imgWidth
         }
+
+        this._xCoordinate = newX
+        this.mask.style.transform = `translate3d(${newX}px, ${this.y}px, 0) scale(${this.scale})`
     }
 
     set y(newY: number) {
-        this.mask.style.transform = `translate3d(${this.x}px, ${newY}px, 0) scale(${this.scale})`
-        // this.mask.style.top = newY + 'px'
-        this._yCoordinate = newY
-
         const { minY, maxY, difY: dif } = this
-        const upBound = (newY - minY) / this._scale - this.imgHeight
-        const lowBonud = (newY - maxY) / this._scale + dif + this.imgHeight
+        let upBound = (newY - minY) / this._scale - this.imgHeight
+        let lowBonud = (newY - maxY) / this._scale + dif + this.imgHeight
+        let round: number
+        if (this.rowEdge < upBound) {
+            round = Math.floor((upBound - this.rowEdge) / (this.rowNum * this.imgHeight))
+            if (round > 0) {
+                newY -= this.rowNum * this.imgHeight * round * this._scale
+                this.baseCol -= round * this.rowNum
+                upBound -= this.imgHeight * round * this.rowNum
+                this.refresh()
+            }
+        }
         while (this.rowEdge < upBound) {
             this.rowEdgeIndex--
             const paramY = this.rowEdgeIndex + this.baseRow
@@ -413,10 +439,18 @@ class BaseMap extends AbstractMap {
                 img.style.top = top + 'px'
                 this.getUrl(img, { x: this.colEdgeIndex + partialCol + this.baseCol, y: paramY })
             })
-            for (let img of this.rowList[row]) {
-
-            }
             this.rowEdge += this.imgHeight
+        }
+
+
+        if (this.rowEdge > lowBonud) {
+            round = Math.floor((this.rowEdge - lowBonud) / (this.rowNum * this.imgHeight))
+            if (round > 0) {
+                newY += this.rowNum * this.imgHeight * round * this._scale
+                this.baseCol += round * this.rowNum
+                lowBonud += this.imgHeight * round * this.rowNum
+                this.refresh()
+            }
         }
         while (this.rowEdge > lowBonud) {
             const paramY = this.rowEdgeIndex + this.rowNum + this.baseRow
@@ -432,7 +466,30 @@ class BaseMap extends AbstractMap {
             this.rowEdgeIndex++
             this.rowEdge -= this.imgHeight
         }
+        this._yCoordinate = newY
+        this.mask.style.transform = `translate3d(${this.x}px, ${newY}px, 0) scale(${this.scale})`
+    }
 
+    refresh() {
+        console.log('refresh')
+        const startRow = posRemainer(this.rowEdgeIndex, this.rowNum)
+        const startCol = posRemainer(this.colEdgeIndex, this.colNum)
+        this.rowList.forEach((rowList, rowIndex) => {
+            const partialRow = posRemainer(rowIndex - startRow, this.rowNum)
+            rowList.forEach((img, colIndex) => {
+                const partialCol = posRemainer(colIndex - startCol, this.colNum)
+                this.getUrl(img, { x: this.colEdgeIndex + partialCol + this.baseCol, y: this.rowEdgeIndex + partialRow + this.baseRow })
+            })
+        })
+        // const paramX = this.colEdgeIndex + this.colNum + this.baseCol
+        // const col = posRemainer(this.colEdgeIndex, this.colNum)
+        // const startRow = posRemainer(this.rowEdgeIndex, this.rowNum)
+        // const startCol = posRemainer(this.colEdgeIndex, this.colNum)
+        // this.colList[col].forEach((img: HTMLElement, rowIndex) => {
+        //     const partialRow = posRemainer(rowIndex - startRow, this.rowNum)
+        //     const partialCol = posRemainer(colIndex - startCol, this.colNum)
+        //     this.getUrl(img, { x: this.colEdgeIndex + partialCol + this.baseCol, y: this.rowEdgeIndex + partialRow + this.baseRow })
+        // })
     }
 
 }
