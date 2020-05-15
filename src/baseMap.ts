@@ -49,7 +49,8 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
         t = map.y
         isDrag = true
         dom.style.cursor = 'move'
-        dom.classList.add('mask-drag')
+        map.isDrag(true)
+        // dom.classList.add('mask-drag')
     }
     const mouseMove = (e: MouseEvent) => {
         e.stopPropagation()
@@ -68,7 +69,8 @@ function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
         e.stopPropagation()
         isDrag = false
         dom.style.cursor = null
-        dom.classList.remove('mask-drag')
+        map.isDrag(false)
+        // dom.classList.remove('mask-drag')
     }
     container.onmousemove = mouseMove
     container.onmousedown = mouseDown
@@ -288,14 +290,21 @@ class BaseMap extends AbstractMap {
         }
     }
 
+    isDrag(drag: boolean) {
+        if(drag) {
+            this.mask.classList.add('mask-drag')
+        } else {
+            this.mask.classList.remove('mask-drag')
+        }
+    }
     //todo 修改为操作元素changeElement
     // 添加事件可能通过继承一个新的类,扩展此方法
     getUrl(dom: HTMLElement, params: srcParam) {
         const img: any = dom.firstElementChild
-        const half = 500 * Math.pow(1.5, this.level)
+        const half = 500 * Math.pow(this.maxScale, this.level)
 
         if (!img.src) {
-            img.src = 'http://192.168.0.106:8081/_MG_0247.jpg'
+            img.src = 'http://127.0.0.1:8081/IMG_7047-Median.jpg'
         }
         img.height = 2 * half
         img.width = 2 * half
@@ -303,35 +312,7 @@ class BaseMap extends AbstractMap {
         img.style.top = `${-params.y * 200}px`
     }
 
-    get x(): number {
-        return this._xCoordinate
-    }
-    get y(): number {
-        return this._yCoordinate
-    }
 
-    get scale(): number {
-        return this._scale
-    }
-
-    set scale(newScale: number) {
-        if (newScale < this.minScale) {
-            if (this._scale > this.minScale) {
-                newScale = this.minScale
-            } else {
-                return
-            }
-        }
-
-        if (newScale > this.maxScale) {
-            if (this._scale < this.maxScale) {
-                newScale = this.maxScale
-            } else {
-                return
-            }
-        }
-        this._setScale(newScale)
-    }
 
     _setScale(newScale: number): [number, number] {
         this.mask.classList.remove('mask-drag')
@@ -352,11 +333,7 @@ class BaseMap extends AbstractMap {
         return [left, top]
     }
 
-
-    //todo 改造setx set y
-    //到边界禁止移动
-    set x(newX: number) {
-
+    _setX(newX: number){
         const { minX, maxX, difX: dif } = this
 
         let upBound = (newX - minX) / this._scale - this.imgWidth
@@ -414,7 +391,7 @@ class BaseMap extends AbstractMap {
         this.mask.style.transform = `translate3d(${newX}px, ${this.y}px, 0) scale(${this.scale})`
     }
 
-    set y(newY: number) {
+    _setY(newY:number){
         const { minY, maxY, difY: dif } = this
         let upBound = (newY - minY) / this._scale - this.imgHeight
         let lowBonud = (newY - maxY) / this._scale + dif + this.imgHeight
@@ -470,6 +447,47 @@ class BaseMap extends AbstractMap {
         this.mask.style.transform = `translate3d(${this.x}px, ${newY}px, 0) scale(${this.scale})`
     }
 
+
+    get scale(): number {
+        return this._scale
+    }
+
+    set scale(newScale: number) {
+        if (newScale < this.minScale) {
+            if (this._scale > this.minScale) {
+                newScale = this.minScale
+            } else {
+                return
+            }
+        }
+
+        if (newScale > this.maxScale) {
+            if (this._scale < this.maxScale) {
+                newScale = this.maxScale
+            } else {
+                return
+            }
+        }
+        this._setScale(newScale)
+    }
+
+    get x(): number {
+        return this._xCoordinate
+    }
+    get y(): number {
+        return this._yCoordinate
+    }
+
+    //todo 改造setx set y
+    //到边界禁止移动
+    set x(newX: number) {
+        this._setX(newX)
+    }
+
+    set y(newY: number) {
+        this._setY(newY)
+    }
+
     refresh() {
         console.log('refresh')
         const startRow = posRemainer(this.rowEdgeIndex, this.rowNum)
@@ -481,15 +499,6 @@ class BaseMap extends AbstractMap {
                 this.getUrl(img, { x: this.colEdgeIndex + partialCol + this.baseCol, y: this.rowEdgeIndex + partialRow + this.baseRow })
             })
         })
-        // const paramX = this.colEdgeIndex + this.colNum + this.baseCol
-        // const col = posRemainer(this.colEdgeIndex, this.colNum)
-        // const startRow = posRemainer(this.rowEdgeIndex, this.rowNum)
-        // const startCol = posRemainer(this.colEdgeIndex, this.colNum)
-        // this.colList[col].forEach((img: HTMLElement, rowIndex) => {
-        //     const partialRow = posRemainer(rowIndex - startRow, this.rowNum)
-        //     const partialCol = posRemainer(colIndex - startCol, this.colNum)
-        //     this.getUrl(img, { x: this.colEdgeIndex + partialCol + this.baseCol, y: this.rowEdgeIndex + partialRow + this.baseRow })
-        // })
     }
 
 }
