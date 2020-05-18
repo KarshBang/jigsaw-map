@@ -11,12 +11,13 @@ window.onhashchange = onhashchange
 
 window.onload = () => {
     if (location.hash.length === 0 || location.hash === '#institutional-migration') {
-        return acemap('/1')
+        return acemap('/institutional-migration')
     } else if (location.hash === '#seminal-papers') {
         return acemap('/seminal-papers')
+    } else if(location.hash === '#skeleton') {
+        return showSkeleton()
     }
     const querySet = getUrlQuery(location.hash)
-    console.log(querySet)
     if(querySet.random) {
         return showOneImg(querySet.src)
     }
@@ -53,7 +54,7 @@ function getUrlQuery(url: string) {
 
 function acemap(filepath: string = '') {
     const container = document.getElementById('container')
-    const baseUrl = `http://127.0.0.1:8081/dist${filepath}`
+    const baseUrl = `./img${filepath}`
     const range: [number, number] = [0, 800]
     const a = new AbstractMap(container, {
         xRange: range,
@@ -133,7 +134,38 @@ function showOneImg(imgUrl: string) {
         return patch
     })
 }
-
+function showSkeleton() {
+    const container = document.getElementById('container')
+    const range: [number, number] = [0, 800]
+    const a = new AbstractMap(container, {
+        xRange: range,
+        yRange: range,
+        imgSize: [200, 200],
+        levelLimit: 4,
+        scaleRange: [0.5, 2],
+        miniMap: {
+            xRange: range,
+            yRange: range,
+        }
+    })
+    const eagleContainer = document.getElementById('eagle')
+    const b = new EagleEye(eagleContainer, { mapRange: [900, 900], mapCanvasSize: [800, 800], eagleSize: [200, 200] })
+    b.linkToMap(a, (dom) => {
+        const img = new Image()
+        // img.src = imgUrl
+        img.style.width = '200px'
+        img.style.height = '200px'
+        dom.appendChild(img)
+    })
+    a.mapSrc(function (dom: HTMLElement, params: srcParam) {
+        dom.innerText = `${this.level}+${params.x}+${params.y}`
+    })
+    a.init(() => {
+        const patch = document.createElement('div')
+        patch.style.border = '1px solid brown'
+        return patch
+    })
+}
 
 declare global {
     interface Window {
