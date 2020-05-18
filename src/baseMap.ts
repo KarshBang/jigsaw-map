@@ -1,4 +1,4 @@
-import { throttle, getLeft, getTop } from './util'
+import { throttle, getLeft, getTop, posRemainer } from './util'
 type imgList = HTMLElement[]
 type numberPair = [number, number]
 interface MiniMapConfig {
@@ -12,19 +12,17 @@ export interface MapConfig {
     levelLimit?: number
     scaleRange?: numberPair
     miniMap?: MiniMapConfig
+    scaleUnitBase?: number
 }
 
-interface srcParam {
+export interface srcParam {
     x: number,
     y: number,
-    // level: number,
+    level?: number,
     // option: string
 }
 
-function posRemainer(a: number, b: number): number {
-    const res = a % b
-    return res < 0 ? res + b : res
-}
+
 
 function addDrag(container: HTMLElement, dom: HTMLElement, map: BaseMap): void {
 
@@ -181,10 +179,10 @@ class BaseMap extends AbstractMap {
             ;[this.minY, this.maxY] = config.yRange
             ;[this.imgHeight, this.imgWidth] = config.imgSize
             ;[this.minScale, this.maxScale] = config.scaleRange || [2 / 3, 1.5]
-        this.minX -= this.imgWidth
-        this.maxX += this.imgWidth
-        this.minY -= this.imgHeight
-        this.maxY += this.imgHeight
+        this.minX -= 2*this.imgWidth
+        this.maxX += 2*this.imgWidth
+        this.minY -= 2*this.imgHeight
+        this.maxY += 2*this.imgHeight
 
 
         const xDomain = this.maxX - this.minX
@@ -218,7 +216,7 @@ class BaseMap extends AbstractMap {
         container.appendChild(mask)
     }
 
-    init(patchInit?: () => HTMLElement, ) {
+    init(patchInit?: () => HTMLElement) {
         const { mask, container } = this
         if (patchInit) {
             this.patchInit = patchInit
@@ -234,8 +232,8 @@ class BaseMap extends AbstractMap {
             }
         }
         addDrag(container, mask, this)
-        const changeScrollStep = addScroll(container, mask, this)
-        this.createMap(-1, -1)
+        const changeScrollStep = addScroll(container, mask, this, 0.5)
+        this.createMap(-2, -2)
         //todo 初始时地图居中
         const partialX = ((this.maxX - this.minX) - this.colNum * this.imgWidth) / 2 + this.minX
         const partialY = ((this.maxY - this.minY) - this.rowNum * this.imgHeight) / 2 + this.minY
@@ -254,9 +252,9 @@ class BaseMap extends AbstractMap {
 
     mapSrc(func?: (dom: HTMLElement, params: srcParam) => void) {
         if (func) {
-            this.getUrl = func
+            this._getUrl = func
         } else {
-            return this.getUrl
+            return this._getUrl
         }
     }
 
@@ -300,18 +298,22 @@ class BaseMap extends AbstractMap {
     //todo 修改为操作元素changeElement
     // 添加事件可能通过继承一个新的类,扩展此方法
     getUrl(dom: HTMLElement, params: srcParam) {
-        const img: any = dom.firstElementChild
-        const half = 500 * Math.pow(this.maxScale, this.level)
+        // const img: any = dom.firstElementChild
+        // const half = 500 * Math.pow(this.maxScale, this.level)
+        params.level = this.level
+        this._getUrl(dom, params)
 
-        if (!img.src) {
-            img.src = 'http://127.0.0.1:8081/IMG_7047-Median.jpg'
-        }
-        img.height = 2 * half
-        img.width = 2 * half
-        img.style.left = `${-params.x * 200}px`
-        img.style.top = `${-params.y * 200}px`
+        // if (!img.src) {
+            // img.src = `http://127.0.0.1:8081/${this.level+1}-${params.x}-${params.y}.png`
+        // }
+        // img.height = 2 * half
+        // img.width = 2 * half
+        // img.style.left = `${-params.x * 200}px`
+        // img.style.top = `${-params.y * 200}px`
     }
-
+    _getUrl(dom: HTMLElement, params: srcParam) {
+        // (<HTMLImageElement>dom).src = `http://127.0.0.1:8081/${params.level+1}-${params.x}-${params.y}.png`
+    }
 
 
     _setScale(newScale: number): [number, number] {
@@ -453,6 +455,7 @@ class BaseMap extends AbstractMap {
     }
 
     set scale(newScale: number) {
+        if(!this.level && newScale < 1) return
         if (newScale < this.minScale) {
             if (this._scale > this.minScale) {
                 newScale = this.minScale

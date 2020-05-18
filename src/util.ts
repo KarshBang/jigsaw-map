@@ -10,7 +10,10 @@ export const throttle = (func: Function, time: number) => {
         }, time)
     }
 }
-
+export function posRemainer(a: number, b: number): number {
+    const res = a % b
+    return res < 0 ? res + b : res
+}
 
 export function getTop(e: HTMLElement | Element): number {
     if((<HTMLElement>e).offsetTop === undefined) {

@@ -21,7 +21,8 @@ function addContext(container: HTMLElement, map: MagnifierMap) {
 }
 
 class LayerMap extends BaseMap {
-    scaleUnit = 225
+    readonly scaleUnitBase: number
+    scaleUnit: number
     levelLimit: number
     scrollStep: (a: number) => number
     moveListeners: ((orgin: [number, number], pixelSize: [number, number]) => void)[]
@@ -30,10 +31,11 @@ class LayerMap extends BaseMap {
         super(container, config)
         this.moveListeners = []
         this.levelLimit = config.levelLimit >= 1 ? config.levelLimit : 1
+        this.scaleUnitBase = config.scaleUnitBase || 225
     }
     createMap(deltaX: number = 0, deltaY: number = 0, level: number = 0) {
         super.createMap(deltaX, deltaY, level)
-        this.scaleUnit = 225 / Math.pow(this.maxScale, level)
+        this.scaleUnit = this.scaleUnitBase / Math.pow(this.maxScale, level)
         this.emitMove()
     }
 
@@ -47,6 +49,7 @@ class LayerMap extends BaseMap {
     }
 
     set scale(newScale: number) {
+        if(!this.level && newScale < 1) return
         if (newScale < this.minScale) {
             if (this._scale > this.minScale) {
                 newScale = this.minScale
@@ -66,7 +69,7 @@ class LayerMap extends BaseMap {
         //todo 判断当scale到达一定程度之后刷新图层
         if (newScale >= this.maxScale || newScale <= this.minScale) {
             const newLevel = newScale > 1 ? this.level + 1 : this.level - 1
-            if (newLevel < 0 || newLevel > this.levelLimit) {
+            if (newLevel < 0 || newLevel >= this.levelLimit) {
                 return
             }
 
@@ -197,7 +200,8 @@ class MagnifierMap extends LayerMap {
 
     init(patchInit?: () => HTMLElement) {
         this.scrollStep = super.init(patchInit)
-        this.miniMap && this.miniMap.init()
+        this.miniMap.mapSrc(this.mapSrc())
+        this.miniMap && this.miniMap.init(patchInit)
         addContext(this.container, this)
         this.container.addEventListener('mousedown', () => {
             this.magnifier = false
@@ -209,6 +213,7 @@ class MagnifierMap extends LayerMap {
         return this._magnifier
     }
     set magnifier(newMagnifier: boolean) {
+        if(newMagnifier && this.level === this.levelLimit - 1) return
         this._magnifier = newMagnifier
         if (!this.miniContainer) return
         this.miniContainer.style.display = newMagnifier ? 'block' : 'none'
