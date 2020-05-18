@@ -1,6 +1,8 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+
 module.exports = {
     mode: 'development',
     devtool: 'cheap-module-source-map',
@@ -35,6 +37,12 @@ module.exports = {
             inject: true
         }),
         new CleanWebpackPlugin(),
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: path.resolve(__dirname, './server/dist'), to: 'img' },
+            ],
+        }
+        )
         // new webPack.HotModuleReplacementPlugin()
     ],
     devServer: {
