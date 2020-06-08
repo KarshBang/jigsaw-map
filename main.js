@@ -97,7 +97,7 @@
 var ___CSS_LOADER_API_IMPORT___ = __webpack_require__(/*! ../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
 exports = ___CSS_LOADER_API_IMPORT___(false);
 // Module
-exports.push([module.i, "* {\r\n    padding: 0;\r\n    margin: 0;\r\n    background: #f5f5f5;\r\n    text-align: center;\r\n}\r\n\r\nhtml,\r\nbody {\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n#container {\r\n    width: 800px;\r\n    height: 800px;\r\n    overflow: hidden;\r\n    position: absolute;\r\n    margin: auto;\r\n    left: 0;\r\n    right: 0;\r\n    top: 0;\r\n    bottom: 0;\r\n\r\n}\r\n\r\n#mini-map {\r\n    width: 200px;\r\n    height: 200px;\r\n    background-color: red;\r\n    overflow: hidden;\r\n    position: absolute;\r\n    border: 2px;\r\n    border-style: groove;\r\n    border-radius: 50%;\r\n    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.3), 0 6px 20px 0 rgba(0, 0, 0, 0.2);\r\n}\r\n\r\n#mask {\r\n    transition-property: transform;\r\n    transition-duration: 200ms;\r\n    transition-timing-function: linear;\r\n}\r\n\r\n#mask.mask-drag {\r\n    transition: none;\r\n}\r\n\r\n\r\n.map-img {\r\n    width: 200px;\r\n    height: 200px;\r\n    font-size: large;\r\n    font-weight: 600;\r\n    text-align: center;\r\n    line-height: 200px;\r\n    background-color: gray;\r\n    box-sizing: content-box;\r\n    /* border: 1px solid brown; */\r\n    position: absolute;\r\n    overflow: hidden;\r\n}\r\n\r\n.map-img>img {\r\n    position: relative;\r\n}\r\n\r\n#eagle {\r\n    width: 200px;\r\n    height: 200px;\r\n    position: absolute;\r\n    margin: auto;\r\n    left: 0;\r\n    right: 0;\r\n    margin-right: calc(50% + 420px);\r\n    bottom: 0;\r\n    top: 0;\r\n    overflow: hidden;\r\n}\r\n\r\n#eagle span {\r\n    position: absolute;\r\n    height: 10px;\r\n    width: 10px;\r\n    background: white;\r\n    box-sizing: border-box;\r\n    border: 3px solid pink;\r\n    opacity: 0.5;\r\n}\r\n\r\n#eagle img {\r\n    width: 200px;\r\n    height: 200px;\r\n}\r\n\r\nimg::after {\r\n    content: \"\";\r\n    height: 100%;\r\n    width: 100%;\r\n    position: absolute;\r\n    left: 0;\r\n    top: 0;\r\n    background: black;\r\n}\r\n\r\n\r\n#container,\r\n#eagle>img {\r\n    box-shadow: 2px 2px 5px #333333;\r\n}\r\n\r\nmain {\r\n    /* position: absolute; */\r\n    top: 0;\r\n    margin: auto;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n}\r\n\r\n#root {\r\n    display: flex;\r\n    flex-direction: column;\r\n    height: 100%;\r\n}\r\n\r\nfooter {\r\n    font-size: 14px;\r\n    padding: 20px;\r\n    color: rgba(0, 0, 0, 0.65);\r\n}\r\n\r\n\r\n\r\nul {\r\n    list-style-type: none;\r\n    margin: 0;\r\n    padding: 0;\r\n    padding-top: 6px;\r\n    padding-bottom: 6px;\r\n    display: inline;\r\n}\r\n\r\nli {\r\n    display: inline;\r\n    direction: initial;\r\n}\r\n\r\na:link,\r\na:visited {\r\n    font-weight: bold;\r\n    color: #FFFFFF;\r\n    background-color: #409EFF;\r\n    text-align: center;\r\n    padding: 6px;\r\n    text-decoration: none;\r\n    text-transform: uppercase;\r\n}\r\n\r\na:hover,\r\na:active {\r\n    background-color: #3077BF;\r\n}\r\n\r\nh1{\r\n    padding: 20px;\r\n}", ""]);
+exports.push([module.i, "* {\r\n    padding: 0;\r\n    margin: 0;\r\n    background: #f5f5f5;\r\n    text-align: center;\r\n}\r\n\r\nhtml,\r\nbody {\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n\r\n#container {\r\n    width: 800px;\r\n    height: 800px;\r\n    overflow: hidden;\r\n    position: absolute;\r\n    margin: auto;\r\n    left: 0;\r\n    right: 0;\r\n    top: 0;\r\n    bottom: 0;\r\n\r\n}\r\n\r\n#mini-map {\r\n    width: 200px;\r\n    height: 200px;\r\n    background-color: red;\r\n    overflow: hidden;\r\n    position: absolute;\r\n    border: 2px;\r\n    border-style: groove;\r\n    border-radius: 50%;\r\n    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.3), 0 6px 20px 0 rgba(0, 0, 0, 0.2);\r\n}\r\n\r\n#mask {\r\n    transition-property: transform;\r\n    transition-duration: 200ms;\r\n    transition-timing-function: linear;\r\n}\r\n\r\n#mask.mask-drag {\r\n    transition: none;\r\n}\r\n\r\n\r\n.map-img {\r\n    width: 200px;\r\n    height: 200px;\r\n    font-size: large;\r\n    font-weight: 600;\r\n    text-align: center;\r\n    line-height: 200px;\r\n    background-color: gray;\r\n    box-sizing: content-box;\r\n    /* border: 1px solid brown; */\r\n    position: absolute;\r\n    overflow: hidden;\r\n}\r\n\r\n.map-img>img {\r\n    position: relative;\r\n}\r\n\r\n#eagle {\r\n    width: 200px;\r\n    height: 200px;\r\n    position: absolute;\r\n    margin: auto;\r\n    left: 0;\r\n    right: 0;\r\n    margin-right: calc(50% + 420px);\r\n    bottom: 0;\r\n    top: 0;\r\n    overflow: hidden;\r\n}\r\n\r\n#eagle span {\r\n    position: absolute;\r\n    height: 10px;\r\n    width: 10px;\r\n    background: white;\r\n    box-sizing: border-box;\r\n    border: 3px solid pink;\r\n    opacity: 0.5;\r\n}\r\n\r\n#eagle img {\r\n    width: 200px;\r\n    height: 200px;\r\n}\r\n\r\nimg::after {\r\n    content: \"\";\r\n    height: 100%;\r\n    width: 100%;\r\n    position: absolute;\r\n    left: 0;\r\n    top: 0;\r\n    background: black;\r\n}\r\n\r\n\r\n#container,\r\n#eagle>img {\r\n    box-shadow: 2px 2px 5px #333333;\r\n}\r\n\r\nmain {\r\n    /* position: absolute; */\r\n    top: 0;\r\n    margin: auto;\r\n    bottom: 0;\r\n    left: 0;\r\n    right: 0;\r\n}\r\n\r\n#root {\r\n    display: flex;\r\n    flex-direction: column;\r\n    height: 100%;\r\n}\r\n\r\nfooter {\r\n    font-size: 14px;\r\n    padding: 20px;\r\n    color: rgba(0, 0, 0, 0.65);\r\n}\r\n\r\n\r\n\r\nul {\r\n    list-style-type: none;\r\n    margin: 0;\r\n    padding: 0;\r\n    padding-top: 6px;\r\n    padding-bottom: 6px;\r\n    display: inline;\r\n}\r\n\r\nli {\r\n    display: inline;\r\n    direction: initial;\r\n}\r\n\r\na:link,\r\na:visited {\r\n    font-weight: bold;\r\n    color: #FFFFFF;\r\n    background-color: #409EFF;\r\n    text-align: center;\r\n    padding: 6px;\r\n    text-decoration: none;\r\n    text-transform: uppercase;\r\n}\r\n\r\na:hover,\r\na:active {\r\n    background-color: #3077BF;\r\n}\r\n\r\nh1{\r\n    padding: 20px;\r\n}\r\n\r\nheader{\r\n    margin-top: 15px;\r\n}", ""]);
 // Exports
 module.exports = exports;
 
@@ -610,6 +610,7 @@ var BaseMap = /** @class */ (function (_super) {
     function BaseMap(container, config) {
         var _a, _b, _c, _d;
         var _this = _super.call(this) || this;
+        _this.registerDict = new WeakMap();
         _a = config.xRange, _this.minX = _a[0], _this.maxX = _a[1];
         _b = config.yRange, _this.minY = _b[0], _this.maxY = _b[1];
         _c = config.imgSize, _this.imgHeight = _c[0], _this.imgWidth = _c[1];
@@ -725,17 +726,16 @@ var BaseMap = /** @class */ (function (_super) {
     //todo 修改为操作元素changeElement
     // 添加事件可能通过继承一个新的类,扩展此方法
     BaseMap.prototype.getUrl = function (dom, params) {
-        // const img: any = dom.firstElementChild
-        // const half = 500 * Math.pow(this.maxScale, this.level)
+        var oldRegister = this.registerDict.get(dom);
+        if (oldRegister) {
+            oldRegister(dom);
+            this.registerDict.delete(dom);
+        }
         params.level = this.level;
-        this._getUrl(dom, params);
-        // if (!img.src) {
-        // img.src = `http://127.0.0.1:8081/${this.level+1}-${params.x}-${params.y}.png`
-        // }
-        // img.height = 2 * half
-        // img.width = 2 * half
-        // img.style.left = `${-params.x * 200}px`
-        // img.style.top = `${-params.y * 200}px`
+        var register = this._getUrl(dom, params);
+        if (register) {
+            this.registerDict.set(dom, register);
+        }
     };
     BaseMap.prototype._getUrl = function (dom, params) {
         // (<HTMLImageElement>dom).src = `http://127.0.0.1:8081/${params.level+1}-${params.x}-${params.y}.png`
@@ -1111,6 +1111,10 @@ function showOneImg(imgUrl) {
         img.width = size;
         img.style.left = -util_1.posRemainer(params.x, 4 * round) * 200 + "px";
         img.style.top = -util_1.posRemainer(params.y, 4 * round) * 200 + "px";
+        // console.log(params.x, params.y, 'in')
+        // return (dom2) => {
+        //     console.log(params.x, params.y, 'out')
+        // }
     });
     a.init(function () {
         var patch = document.createElement('div');
