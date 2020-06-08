@@ -1,4 +1,6 @@
 import { throttle, getLeft, getTop, posRemainer } from './util'
+type registerFunc = (dom: HTMLElement) => void
+type registerType = void | registerFunc
 type imgList = HTMLElement[]
 type numberPair = [number, number]
 interface MiniMapConfig {
@@ -159,15 +161,19 @@ abstract class AbstractMap {
     mask: HTMLElement
     container: HTMLElement
 
+    registerDict: WeakMap<HTMLElement,Function>
+
     abstract init(patchInit?: () => HTMLElement): void
     abstract patchInit(): HTMLElement
-    abstract mapSrc(func?: (dom: HTMLElement, params: srcParam) => void): void
+    abstract mapSrc(func?: (dom: HTMLElement, params: srcParam) => registerType): void
     abstract createMap(deltaX: number, deltaY: number, level: number): void
     abstract getUrl(dom: HTMLElement, params: srcParam): void
 
     abstract x: number
     abstract y: number
     abstract scale: number
+
+    
 }
 
 
@@ -175,6 +181,7 @@ class BaseMap extends AbstractMap {
 
     constructor(container: HTMLElement, config: MapConfig) {
         super()
+        this.registerDict = new WeakMap()
             ;[this.minX, this.maxX] = config.xRange
             ;[this.minY, this.maxY] = config.yRange
             ;[this.imgHeight, this.imgWidth] = config.imgSize
@@ -250,7 +257,7 @@ class BaseMap extends AbstractMap {
         return patch
     }
 
-    mapSrc(func?: (dom: HTMLElement, params: srcParam) => void) {
+    mapSrc(func?: (dom: HTMLElement, params: srcParam) => registerType) {
         if (func) {
             this._getUrl = func
         } else {
@@ -298,20 +305,20 @@ class BaseMap extends AbstractMap {
     //todo 修改为操作元素changeElement
     // 添加事件可能通过继承一个新的类,扩展此方法
     getUrl(dom: HTMLElement, params: srcParam) {
-        // const img: any = dom.firstElementChild
-        // const half = 500 * Math.pow(this.maxScale, this.level)
+        const oldRegister = this.registerDict.get(dom)
+        if(oldRegister) {
+            oldRegister(dom)
+            this.registerDict.delete(dom)
+        }
         params.level = this.level
-        this._getUrl(dom, params)
+        const register = this._getUrl(dom, params)
+        if(register){
+            this.registerDict.set(dom, register)
+        }
 
-        // if (!img.src) {
-            // img.src = `http://127.0.0.1:8081/${this.level+1}-${params.x}-${params.y}.png`
-        // }
-        // img.height = 2 * half
-        // img.width = 2 * half
-        // img.style.left = `${-params.x * 200}px`
-        // img.style.top = `${-params.y * 200}px`
+
     }
-    _getUrl(dom: HTMLElement, params: srcParam) {
+    _getUrl(dom: HTMLElement, params: srcParam) : registerType {
         // (<HTMLImageElement>dom).src = `http://127.0.0.1:8081/${params.level+1}-${params.x}-${params.y}.png`
     }
 

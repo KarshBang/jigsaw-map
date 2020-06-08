@@ -125,6 +125,11 @@ function showOneImg(imgUrl: string) {
         img.width = size
         img.style.left = `${-posRemainer(params.x, 4*round) * 200}px`
         img.style.top = `${-posRemainer(params.y, 4* round) * 200}px`
+
+        // console.log(params.x, params.y, 'in')
+        // return (dom2) => {
+        //     console.log(params.x, params.y, 'out')
+        // }
     })
     a.init(() => {
         const patch = document.createElement('div')
